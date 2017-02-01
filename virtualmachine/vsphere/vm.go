@@ -22,7 +22,7 @@ import (
 	"github.com/vmware/govmomi/property"
 	"github.com/vmware/govmomi/vim25/types"
 
-	"golang.org/x/net/context"
+	"context"
 )
 
 type vmwareFinder struct {
@@ -50,7 +50,7 @@ type VMwareLease struct {
 // HTTPNfcLeaseProgress takes a percentage as an int and sets that percentage as
 // the completed percent.
 func (v VMwareLease) HTTPNfcLeaseProgress(p int) {
-	v.Lease.HttpNfcLeaseProgress(v.Ctx, p)
+	v.Lease.HttpNfcLeaseProgress(v.Ctx, int32(p))
 }
 
 // Wait waits for the underlying lease to finish.
