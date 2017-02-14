@@ -4,6 +4,7 @@ package vsphere
 
 import (
 	"crypto/tls"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -15,8 +16,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-
-	"context"
 
 	"github.com/vmware/govmomi"
 	"github.com/vmware/govmomi/find"
@@ -421,12 +420,12 @@ var reconfigureVM = func(vm *VM, vmMo *mo.VirtualMachine) error {
 
 	dcMo, err := GetDatacenter(vm)
 	if err != nil {
-		return fmt.Errorf("Failed to retrieve datacenter: %s", err)
+		return err
 	}
 
-	dsMo, err := findDatastore(vm, dcMo, vm.Datastores[0])
+	dsMo, err := findDatastore(vm, dcMo, vm.datastore)
 	if err != nil {
-		return fmt.Errorf("Datastore not found", vm.Datastores[0], err)
+		return err
 	}
 
 	var add []types.BaseVirtualDevice

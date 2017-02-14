@@ -3,6 +3,7 @@
 package vsphere
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -21,8 +22,6 @@ import (
 	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/property"
 	"github.com/vmware/govmomi/vim25/types"
-
-	"context"
 )
 
 type vmwareFinder struct {
@@ -49,8 +48,8 @@ type VMwareLease struct {
 
 // HTTPNfcLeaseProgress takes a percentage as an int and sets that percentage as
 // the completed percent.
-func (v VMwareLease) HTTPNfcLeaseProgress(p int) {
-	v.Lease.HttpNfcLeaseProgress(v.Ctx, int32(p))
+func (v VMwareLease) HTTPNfcLeaseProgress(p int32) {
+	v.Lease.HttpNfcLeaseProgress(v.Ctx, p)
 }
 
 // Wait waits for the underlying lease to finish.
@@ -109,7 +108,7 @@ func (r ReadProgress) StartProgress() {
 	r.wg.Add(1)
 	go func() {
 		var bytesReceived int64
-		var percent int
+		var percent int32
 		tick := time.NewTicker(5 * time.Second)
 		defer tick.Stop()
 		defer r.wg.Done()
@@ -117,7 +116,7 @@ func (r ReadProgress) StartProgress() {
 			select {
 			case b := <-r.ch:
 				bytesReceived += b
-				percent = int((float32(bytesReceived) / float32(r.TotalBytes)) * 100)
+				percent = int32((float32(bytesReceived) / float32(r.TotalBytes)) * 100)
 			case <-tick.C:
 				// TODO: Preet This can return an error as well, should return it
 				r.Lease.HTTPNfcLeaseProgress(percent)
@@ -302,7 +301,7 @@ type Destination struct {
 
 // Lease represents a type that wraps around a HTTPNfcLease
 type Lease interface {
-	HTTPNfcLeaseProgress(int)
+	HTTPNfcLeaseProgress(int32)
 	Wait() (*types.HttpNfcLeaseInfo, error)
 	Complete() error
 }
