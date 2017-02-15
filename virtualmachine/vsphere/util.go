@@ -4,6 +4,7 @@ package vsphere
 
 import (
 	"crypto/tls"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -15,8 +16,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-
-	"golang.org/x/net/context"
 
 	"github.com/vmware/govmomi"
 	"github.com/vmware/govmomi/find"
@@ -214,8 +213,8 @@ var createNetworkMapping = func(vm *VM, networks map[string]string, networkMors 
 var resetUnitNumbers = func(spec *types.OvfCreateImportSpecResult) {
 	s := &spec.ImportSpec.(*types.VirtualMachineImportSpec).ConfigSpec
 	for _, d := range s.DeviceChange {
-		n := &d.GetVirtualDeviceConfigSpec().Device.GetVirtualDevice().UnitNumber
-		if *n == 0 {
+		n := d.GetVirtualDeviceConfigSpec().Device.GetVirtualDevice().UnitNumber
+		if n != nil && *n == 0 {
 			*n = -1
 		}
 	}
@@ -419,13 +418,23 @@ var reconfigureVM = func(vm *VM, vmMo *mo.VirtualMachine) error {
 		return err
 	}
 
+	dcMo, err := GetDatacenter(vm)
+	if err != nil {
+		return err
+	}
+
+	dsMo, err := findDatastore(vm, dcMo, vm.datastore)
+	if err != nil {
+		return err
+	}
+
 	var add []types.BaseVirtualDevice
 	for _, disk := range vm.Disks {
 		controller, err := devices.FindDiskController(disk.Controller)
 		if err != nil {
 			return err
 		}
-		d := devices.CreateDisk(controller, "")
+		d := devices.CreateDisk(controller, dsMo.Reference(), "")
 		d.CapacityInKB = disk.Size
 		add = append(add, d)
 	}
