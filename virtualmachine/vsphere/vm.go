@@ -735,3 +735,47 @@ func (vm *VM) GetSSH(options ssh.Options) (ssh.Client, error) {
 	client := ssh.SSHClient{Creds: &vm.Credentials, IP: ips[0], Port: 22, Options: options}
 	return &client, nil
 }
+
+// DeleteTemplate deletes the vm-template, created during vm provisioning
+func DeleteTemplate(vm *VM) error {
+	// for the templates that do not exist in server
+	missingTemplates := make([]string, 0)
+	if err := SetupSession(vm); err != nil {
+		return err
+	}
+	dcMo, err := GetDatacenter(vm)
+	if err != nil {
+		return fmt.Errorf("Failed to retrieve datacenter: %s", err)
+	}
+	// find and delete vm-templates from all provided datastores
+	for _, datastore := range vm.Datastores {
+		// generate template name <provided-name>-<datastore-name>
+		template := createTemplateName(vm.Template, datastore)
+		// finds the template vm in Host specified in vm.Destination in Datacenter dcMo
+		templateVm, err := findVM(vm, dcMo, template)
+		if err != nil {
+			// add to missing templates list if it doesn't exist or in case of error
+			missingTemplates = append(missingTemplates, template)
+			continue
+		}
+		// create vm object for found vm-template and calls destroy function on the vm
+		vmo := object.NewVirtualMachine(vm.client.Client, templateVm.Reference())
+		task, err := vmo.Destroy(vm.ctx)
+		if err != nil {
+			return err
+		}
+		// wait for the task to complete and checks for the errors if any
+		tInfo, err := task.WaitForResult(vm.ctx, nil)
+		if err != nil {
+			return fmt.Errorf("Error waiting for task : %s", err)
+		}
+		if tInfo.Error != nil {
+			return fmt.Errorf("Destroy task returned error : %s", tInfo.Error)
+		}
+	}
+	//  If there are any missing templates, return error
+	if len(missingTemplates) != 0 {
+		return fmt.Errorf("Following templates not found.\n[ %s ].\nHowever any found templates are deleted", strings.Join(missingTemplates, ", "))
+	}
+	return nil
+}
