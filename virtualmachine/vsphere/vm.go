@@ -850,3 +850,47 @@ func GetDcNetworkList(vm *VM) (map[string][]string, error) {
 	}
 	return networkList, nil
 }
+
+// GetDcImageList : GetDcImageList returns the list of images in
+// all the datacenters in vcenter server
+func GetDcImageList(vm *VM) (map[string][]string, error) {
+	imageList := map[string][]string{}
+	// set up session to vcenter server
+	if err := SetupSession(vm); err != nil {
+		return nil, err
+	}
+	// get datacenter list in the vcenter server
+	dcList, err := vm.finder.DatacenterList(vm.ctx, "*")
+	if err != nil {
+		return nil, err
+	}
+
+	// for all datacenters in the vcenter server
+	for _, dc := range dcList {
+		// Set datacenter
+		vm.finder.SetDatacenter(dc)
+		// find the virtualmachines in selected datacenter
+		allVms, err := vm.finder.VirtualMachineList(vm.ctx, "*")
+		if err != nil {
+			return nil, err
+		}
+		var vmsMor []types.ManagedObjectReference
+		for _, vm := range allVms {
+			vmsMor = append(vmsMor, vm.Reference())
+		}
+		// get the vm names and config
+		var allVmsMo []mo.VirtualMachine
+		err = vm.collector.Retrieve(vm.ctx, vmsMor, []string{"name", "config"}, &allVmsMo)
+		if err != nil {
+			return nil, err
+		}
+		// generate response for the images in datacenter. In the response map
+		// the key is the datacenter name and value is the list of images in datacenter
+		for _, vmMo := range allVmsMo {
+			if vmMo.Config.Template {
+				imageList[dc.Name()] = append(imageList[dc.Name()], vmMo.Name)
+			}
+		}
+	}
+	return imageList, nil
+}
