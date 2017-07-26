@@ -742,14 +742,14 @@ var reset = func(vm *VM) error {
 	vmo := object.NewVirtualMachine(vm.client.Client, vmMo.Reference())
 	resetTask, err := vmo.Reset(vm.ctx)
 	if err != nil {
-		return fmt.Errorf("error creating a reset task on the vm: %s", err)
+		return fmt.Errorf("error creating a reset task on the vm: %v", err)
 	}
 	tInfo, err := resetTask.WaitForResult(vm.ctx, nil)
 	if err != nil {
-		return fmt.Errorf("error waiting for reset task: %s", err)
+		return fmt.Errorf("error waiting for reset task: %v", err)
 	}
 	if tInfo.Error != nil {
-		return fmt.Errorf("reset task returned an error: %s", err)
+		return fmt.Errorf("reset task returned an error: %v", err)
 	}
 	return nil
 }
