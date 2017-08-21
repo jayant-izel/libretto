@@ -1234,37 +1234,46 @@ func GetDcImageList(vm *VM) (map[string][]string, error) {
 
 	// for all datacenters in the vcenter server
 	for _, dc := range dcList {
-		// Set datacenter
-		vm.finder.SetDatacenter(dc)
-		// find the virtualmachines in selected datacenter
-		allVms, err := vm.finder.VirtualMachineList(vm.ctx, "*")
-		if err != nil {
-			switch err.(type) {
-			case *find.NotFoundError:
-				imageList[dc.Name()] = []string{}
-				continue
-			}
-			return nil, err
-		}
-		var vmsMor []types.ManagedObjectReference
-		for _, vm := range allVms {
-			vmsMor = append(vmsMor, vm.Reference())
-		}
-		// get the vm names and config
-		var allVmsMo []mo.VirtualMachine
-		err = vm.collector.Retrieve(vm.ctx, vmsMor, []string{"name", "config"}, &allVmsMo)
+		allVmsMo, err := getDcVMList(vm, dc)
 		if err != nil {
 			return nil, err
+		}
+		if allVmsMo == nil {
+			continue
 		}
 		// generate response for the images in datacenter. In the response map
 		// the key is the datacenter name and value is the list of images in datacenter
 		for _, vmMo := range allVmsMo {
-			if vmMo.Config.Template {
+			if vmMo.Config != nil && vmMo.Config.Template {
 				imageList[dc.Name()] = append(imageList[dc.Name()], vmMo.Name)
 			}
 		}
 	}
 	return imageList, nil
+}
+
+// getDcVMList : returns list of VirtualMachine objects in a Datacenter
+func getDcVMList(vm *VM, datacenter *object.Datacenter) ([]mo.VirtualMachine, error) {
+	var allVmsMo []mo.VirtualMachine
+
+	// Set datacenter
+	vm.finder.SetDatacenter(datacenter)
+	// find the virtual machines in selected datacenter
+	allVms, err := vm.finder.VirtualMachineList(vm.ctx, "*")
+	if err != nil {
+		switch err.(type) {
+		case *find.NotFoundError:
+			return allVmsMo, nil
+		}
+		return nil, err
+	}
+	var vmsMor []types.ManagedObjectReference
+	for _, vm := range allVms {
+		vmsMor = append(vmsMor, vm.Reference())
+	}
+	// get the vm names and config
+	err = vm.collector.Retrieve(vm.ctx, vmsMor, []string{"name", "config"}, &allVmsMo)
+	return allVmsMo, err
 }
 
 // GetDcClusterList : GetDcClusterList returns the clusters in the datacenter
@@ -1433,25 +1442,27 @@ func CreateTemplate(vm *VM) error {
 
 // GetTemplateList : Returns the template VMs in a cluster
 func GetTemplateList(vm *VM) ([]map[string]string, error) {
+	vmList := make([]map[string]string, 0)
 	vmMoList, err := getVirtualMachines(vm)
 	if err != nil {
 		return nil, err
 	}
 
-	vmList := make([]map[string]string, 0)
-	for _, vmo := range vmMoList {
-		// Filter out the templates
-		if vmo.Config.Template {
-			vmList = append(vmList, map[string]string{
-				"name": vmo.Name,
-				"id":   vmo.Self.Value,
-			})
+	if vmMoList != nil {
+		for _, vmo := range vmMoList {
+			// Filter out the templates
+			if vmo.Config != nil && vmo.Config.Template {
+				vmList = append(vmList, map[string]string{
+					"name": vmo.Name,
+					"id":   vmo.Self.Value,
+				})
+			}
 		}
 	}
 	return vmList, nil
 }
 
-// GetVirtualMachines : Return the virual machines in a cluster
+// getVirtualMachines : Return the virtual machines in a cluster
 func getVirtualMachines(vm *VM) ([]mo.VirtualMachine, error) {
 	var (
 		vmList          []mo.VirtualMachine
@@ -1461,6 +1472,17 @@ func getVirtualMachines(vm *VM) ([]mo.VirtualMachine, error) {
 	// set up session to vcenter server
 	if err := SetupSession(vm); err != nil {
 		return nil, err
+	}
+
+	if vm.Destination.DestinationName == "" {
+		// Return virtual machines for the whole datacenter
+		dcMo, err := GetDatacenter(vm)
+		if err != nil {
+			return nil, err
+		}
+
+		dcObj := object.NewDatacenter(vm.client.Client, dcMo.Reference())
+		return getDcVMList(vm, dcObj)
 	}
 
 	// set up session to vcenter server
