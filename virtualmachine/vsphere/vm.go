@@ -302,7 +302,7 @@ type ErrorParsingURL struct {
 type ErrorInvalidHost struct {
 	host string
 	ds   string
-	nw   map[string]string
+	nw   []map[string]string
 }
 
 func (e ErrorInvalidHost) Error() string {
@@ -365,7 +365,7 @@ func NewErrorParsingURL(u string, e error) ErrorParsingURL {
 }
 
 // NewErrorInvalidHost returns an ErrorInvalidHost error.
-func NewErrorInvalidHost(h string, d string, n map[string]string) ErrorInvalidHost {
+func NewErrorInvalidHost(h string, d string, n []map[string]string) ErrorInvalidHost {
 	return ErrorInvalidHost{host: h, ds: d, nw: n}
 }
 
@@ -493,9 +493,9 @@ type VM struct {
 	// If OvaPathUrl is given then OvaPathUrl will be used, if not then OvfPath will be used
 	// If Both are given preference will be given to OvaPathUrl.
 	OvaPathUrl string
-	// Networks defines a mapping from each network label inside the ovf file
-	// to a vSphere network. Must be available on the host or deploy will fail.
-	Networks map[string]string
+	// Networks defines a slice of networks to be attached to the VM
+	// They must be available on the host or deploy will fail.
+	Networks []map[string]string
 	// Name is the name to use for the VM on vSphere and internally.
 	Name string
 	// Template is the name to use for the VM's template
