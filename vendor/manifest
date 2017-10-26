@@ -362,14 +362,6 @@
 			"notests": true
 		},
 		{
-			"importpath": "google.golang.org/grpc",
-			"repository": "https://github.com/grpc/grpc-go",
-			"vcs": "git",
-			"revision": "708a7f9f3283aa2d4f6132d287d78683babe55c8",
-			"branch": "master",
-			"notests": true
-		},
-		{
 			"importpath": "gopkg.in/yaml.v2",
 			"repository": "https://gopkg.in/yaml.v2",
 			"vcs": "git",
