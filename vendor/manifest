@@ -11,15 +11,6 @@
 			"notests": true
 		},
 		{
-			"importpath": "cloud.google.com/go/internal",
-			"repository": "https://code.googlesource.com/gocloud",
-			"vcs": "git",
-			"revision": "bfdc39bde7a3c8dd361ea7fcdb69e7a41a475bb9",
-			"branch": "master",
-			"path": "internal",
-			"notests": true
-		},
-		{
 			"importpath": "github.com/Azure/azure-sdk-for-go/arm",
 			"repository": "https://github.com/Azure/azure-sdk-for-go",
 			"vcs": "git",
