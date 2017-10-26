@@ -5,7 +5,7 @@
 			"importpath": "cloud.google.com/go/compute/metadata",
 			"repository": "https://code.googlesource.com/gocloud",
 			"vcs": "git",
-			"revision": "bfdc39bde7a3c8dd361ea7fcdb69e7a41a475bb9",
+			"revision": "36dc44d65c859022eaa611ad10621be885d3643a",
 			"branch": "master",
 			"path": "/compute/metadata",
 			"notests": true
