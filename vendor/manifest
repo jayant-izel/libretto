@@ -318,15 +318,6 @@
 			"notests": true
 		},
 		{
-			"importpath": "golang.org/x/net/trace",
-			"repository": "https://go.googlesource.com/net",
-			"vcs": "git",
-			"revision": "6cdc0daab091c43fc46193327e0047b4f883c613",
-			"branch": "master",
-			"path": "trace",
-			"notests": true
-		},
-		{
 			"importpath": "golang.org/x/oauth2",
 			"repository": "https://go.googlesource.com/oauth2",
 			"vcs": "git",
